@@ -1,6 +1,6 @@
 streamlit==1.28.0
-numpy>1.24.3
-pandas<2.1.0
+numpy>=1.25.2        # Python 3.13용 wheel 제공
+pandas>=2.1.1
 scikit-learn==1.3.0
 plotly==5.15.0
 seaborn==0.12.2
