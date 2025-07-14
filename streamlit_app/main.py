@@ -12,8 +12,8 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.customer.customer_manager import CustomerManager
-from src.recommendation.recommendation_engine import SmartRecommendationEngine  # 변경됨
-from src.utils.data_loader import RealDataLoader
+from src.utils.data_loader import UltraMinimalDataLoader
+from src.recommendation.recommendation_engine import UltraMinimalRecommendationEngine
 from streamlit_app.components.customer_profile import render_customer_profile
 from streamlit_app.components.chat_interface import render_chat_interface
 
@@ -123,7 +123,7 @@ REVERSE_SEGMENT_MAPPING = {v: k for k, v in SEGMENT_MAPPING.items()}
 def load_real_data():
     """실제 데이터 로딩 (캐시됨)"""
     try:
-        data_loader = RealDataLoader()
+        data_loader = UltraMinimalDataLoader()
         transactions, customers, products = data_loader.load_all_data()
         return transactions, customers, products, None
     except Exception as e:
@@ -149,7 +149,7 @@ def initialize_system():
         customer_manager.load_data(customers, transactions)
 
         # 추천 엔진 초기화 (클래스명 변경)
-        recommendation_engine = SmartRecommendationEngine()  # 변경됨
+        recommendation_engine = UltraMinimalRecommendationEngine()
         recommendation_engine.fit(transactions, products)
 
         return (
