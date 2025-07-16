@@ -50,3 +50,28 @@ def initialize_system():
         st.error(f"시스템 초기화 오류: {str(e)}")
         st.error(f"오류 상세: {traceback.format_exc()}")
         return False
+
+
+# main.py에 추가
+st.markdown(
+    """
+<style>
+    /* 다크모드 대응 */
+    .stApp > div {
+        background-color: var(--background-color);
+    }
+    
+    /* 추천 카드 호버 효과 */
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* 텍스트 가독성 개선 */
+    .product-title {
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)

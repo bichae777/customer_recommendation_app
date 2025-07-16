@@ -1,95 +1,157 @@
-def get_minimal_recommendations(
-    recommendation_engine, customer_id: str, query: str, segment: str
-) -> List[Dict]:
-    """최소한 안전 추천 생성 - 디버깅 강화"""
+def display_minimal_chat_history():
+    """최소한 안전 채팅 히스토리 표시 - 스타일 개선"""
 
-    recommendations = []
-
+    # 채팅 히스토리 체크
+    history_count = 0
     try:
-        # 디버깅 정보 추가
-        st.write(f"🔍 검색어: {query}")
-        st.write(f"👤 고객 ID: {customer_id}")
-        st.write(f"📊 세그먼트: {segment}")
+        history_count = len(st.session_state.chat_history)
+    except:
+        history_count = 0
 
-        # 추천 엔진 체크
-        if recommendation_engine is None:
-            st.error("추천 엔진이 None입니다.")
-            return []
-
-        if not hasattr(recommendation_engine, "get_recommendations"):
-            st.error("추천 엔진에 get_recommendations 메소드가 없습니다.")
-            return []
-
-        # 추천 생성 전 상태 확인
-        if hasattr(recommendation_engine, "products"):
-            st.write(f"📦 로드된 상품 수: {len(recommendation_engine.products)}")
-            # 상품 이름에 '우유'가 포함된 상품 찾기
-            if hasattr(recommendation_engine.products, "product_name"):
-                milk_products = recommendation_engine.products[
-                    recommendation_engine.products["product_name"].str.contains(
-                        "우유", na=False
-                    )
-                ]
-                st.write(f"🥛 우유 관련 상품: {len(milk_products)}개")
-                if len(milk_products) > 0:
-                    st.write(milk_products[["product_name", "category"]].head())
-
-        # 추천 생성
-        result = recommendation_engine.get_recommendations(
-            customer_id=str(customer_id),
-            product_query=str(query),
-            n_recommendations=6,
-            customer_segment=str(segment),
+    if history_count == 0:
+        st.markdown(
+            "👋 안녕하세요! 상품명을 입력하시면 AI가 관련 상품을 추천해드립니다."
         )
+        return
 
-        # 결과 디버깅
-        st.write(f"📋 추천 결과 타입: {type(result)}")
-        st.write(f"📋 추천 결과 길이: {len(result) if result else 0}")
+    # 채팅 메시지 표시
+    for idx in range(history_count):
+        try:
+            message = st.session_state.chat_history[idx]
 
-        # 나머지 처리 로직은 동일...
-        if result is None:
-            st.warning("추천 엔진에서 None을 반환했습니다.")
-            return []
+            role = str(message.get("role", "user"))
+            content = str(message.get("content", ""))
 
-        if not isinstance(result, list):
-            st.warning(f"추천 결과가 리스트가 아닙니다: {type(result)}")
-            return []
+            if role == "user":
+                # 사용자 메시지
+                st.markdown(
+                    f"""
+                    <div style="
+                        display: flex; 
+                        justify-content: flex-end; 
+                        margin: 10px 0;
+                    ">
+                        <div style="
+                            background: #007acc; 
+                            color: white; 
+                            padding: 10px 15px; 
+                            border-radius: 18px 18px 4px 18px; 
+                            max-width: 70%;
+                            font-size: 14px;
+                        ">
+                            {content}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        # 각 추천을 안전하게 변환
-        safe_recommendations = []
-        for item in result:
-            try:
-                if isinstance(item, dict):
-                    product_id = item.get("product_id")
-                    if product_id:
-                        safe_item = {
-                            "product_id": str(product_id),
-                            "product_name": str(
-                                item.get("product_name", "Unknown Product")
-                            ),
-                            "category": str(item.get("category", "Unknown")),
-                            "brand": str(item.get("brand", "Unknown")),
-                            "price": 5.0,
-                            "reason": str(item.get("reason", "AI 추천")),
-                            "similarity_to_query": 0.8,
-                        }
+            else:  # assistant
+                # AI 응답 메시지
+                st.markdown(
+                    f"""
+                    <div style="
+                        display: flex; 
+                        justify-content: flex-start; 
+                        margin: 10px 0;
+                    ">
+                        <div style="
+                            background: #f0f0f0; 
+                            color: #333; 
+                            padding: 10px 15px; 
+                            border-radius: 18px 18px 18px 4px; 
+                            max-width: 70%;
+                            font-size: 14px;
+                        ">
+                            🤖 {content}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                        # 가격 안전 변환
-                        try:
-                            price_val = item.get("price")
-                            if price_val is not None:
-                                safe_item["price"] = float(price_val)
-                        except:
-                            safe_item["price"] = 5.0
+                # 추천 상품 표시 (스타일 개선)
+                try:
+                    recommendations = message.get("recommendations", [])
+                    rec_count = len(recommendations) if recommendations else 0
 
-                        safe_recommendations.append(safe_item)
-            except Exception as e:
-                st.error(f"추천 아이템 처리 오류: {str(e)}")
-                continue
+                    if rec_count > 0:
+                        st.markdown("**🛍️ 추천 상품:**")
 
-        return safe_recommendations
+                        # 최대 4개까지만 표시
+                        display_count = min(rec_count, 4)
 
-    except Exception as e:
-        st.error(f"추천 엔진 오류: {str(e)}")
-        st.error(f"오류 상세: {traceback.format_exc()}")
-        return []
+                        for i in range(display_count):
+                            try:
+                                rec = recommendations[i]
+                                product_name = str(
+                                    rec.get("product_name", "Unknown Product")
+                                )
+                                category = str(rec.get("category", "Unknown"))
+                                brand = str(rec.get("brand", "Unknown"))
+                                price = rec.get("price", 5.0)
+                                reason = str(rec.get("reason", "AI 추천"))
+
+                                # 개선된 상품 카드 스타일
+                                st.markdown(
+                                    f"""
+                                    <div style="
+                                        border: 2px solid #e1e5e9; 
+                                        border-radius: 12px; 
+                                        padding: 16px; 
+                                        margin: 8px 0;
+                                        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                                        transition: transform 0.2s ease;
+                                    ">
+                                        <div style="
+                                            font-size: 16px;
+                                            font-weight: bold;
+                                            color: #2c3e50;
+                                            margin-bottom: 8px;
+                                        ">
+                                            🛒 {product_name}
+                                        </div>
+                                        <div style="
+                                            font-size: 14px;
+                                            color: #5a6c7d;
+                                            margin-bottom: 4px;
+                                        ">
+                                            <span style="background: #e3f2fd; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                                                {category}
+                                            </span>
+                                            <span style="margin-left: 8px; font-weight: 500;">
+                                                {brand}
+                                            </span>
+                                        </div>
+                                        <div style="
+                                            display: flex;
+                                            justify-content: space-between;
+                                            align-items: center;
+                                            margin-top: 8px;
+                                        ">
+                                            <span style="
+                                                font-size: 18px;
+                                                font-weight: bold;
+                                                color: #e74c3c;
+                                            ">
+                                                ${price:.2f}
+                                            </span>
+                                            <span style="
+                                                font-size: 12px;
+                                                color: #7f8c8d;
+                                                font-style: italic;
+                                            ">
+                                                {reason}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True,
+                                )
+                            except:
+                                continue
+                except:
+                    pass
+        except:
+            continue  # 문제 있는 메시지는 건너뛰기
